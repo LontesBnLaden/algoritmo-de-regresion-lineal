@@ -16,7 +16,15 @@ class AppTests(unittest.TestCase):
         self.assertFalse(app.exception)
         metric_labels = {item.label for item in app.metric}
         self.assertTrue(
-            {"R² de prueba", "MAE de prueba", "RMSE de prueba"}.issubset(metric_labels)
+            {
+                "R² de prueba",
+                "MAE de prueba",
+                "RMSE de prueba",
+                "Registros analizados",
+            }.issubset(metric_labels)
+        )
+        self.assertTrue(
+            any("Diagnóstico visual del modelo" in item.value for item in app.markdown)
         )
         self.assertTrue(
             any("Historial listo: 24 registros" in item.value for item in app.success)

@@ -54,6 +54,18 @@ st.markdown(
     }
     .hero h1 { margin: 0; color: white; font-size: 2rem; }
     .hero p { margin: .45rem 0 0; color: #e1f4f4; font-size: 1rem; }
+    .hero-pills {
+        display: flex; flex-wrap: wrap; gap: .55rem;
+        margin-top: 1rem;
+    }
+    .hero-pill {
+        padding: .35rem .7rem;
+        border: 1px solid rgba(225, 244, 244, .35);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, .1);
+        color: #f2fbfb;
+        font-size: .82rem;
+    }
     .section-label {
         color: #087f8c; font-weight: 700; letter-spacing: .08em;
         text-transform: uppercase; font-size: .75rem;
@@ -81,6 +93,14 @@ st.markdown(
         border: 1px solid var(--line);
         border-radius: 14px;
         background: white;
+    }
+    [data-testid="stDataFrame"], [data-testid="stTable"] {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    [data-testid="stCaptionContainer"] {
+        color: var(--muted);
     }
     h2, h3 { color: var(--ink); }
     </style>
@@ -180,6 +200,17 @@ def render_history_chart(
         label="Datos históricos",
         zorder=3,
     )
+    axis.scatter(
+        result.test_features[spec["feature"]],
+        result.test_actual,
+        color="#e88943",
+        s=68,
+        marker="D",
+        edgecolor="white",
+        linewidth=0.9,
+        label="Datos reservados para prueba",
+        zorder=4,
+    )
     axis.plot(x_values, y_values, color="#e88943", linewidth=2.7, label="Recta ajustada")
     if future_data is not None:
         axis.plot(
@@ -216,6 +247,79 @@ def render_history_chart(
     plt.close(figure)
 
 
+def render_evaluation_charts(
+    evaluation_report: pd.DataFrame, case_key: str
+) -> None:
+    spec = CASE_SPECS[case_key]
+    actual = evaluation_report["Valor real (S/)"]
+    predicted = evaluation_report["Predicción (S/)"]
+    residuals = evaluation_report["Error (S/)"]
+    lower = min(float(actual.min()), float(predicted.min()))
+    upper = max(float(actual.max()), float(predicted.max()))
+    padding = max((upper - lower) * 0.06, 1.0)
+    line_limits = (lower - padding, upper + padding)
+
+    figure, axes = plt.subplots(1, 2, figsize=(11, 4.2), dpi=120)
+    figure.patch.set_facecolor("white")
+    for axis in axes:
+        axis.set_facecolor("white")
+        axis.grid(color="#e7edf4", linewidth=0.8)
+        axis.spines[["top", "right"]].set_visible(False)
+        axis.spines[["left", "bottom"]].set_color("#d5dee8")
+        axis.tick_params(colors="#64748b")
+
+    axes[0].scatter(
+        actual,
+        predicted,
+        color="#087f8c",
+        edgecolor="white",
+        linewidth=0.9,
+        s=75,
+        zorder=3,
+    )
+    axes[0].plot(
+        line_limits,
+        line_limits,
+        color="#e88943",
+        linestyle="--",
+        linewidth=2,
+        label="Estimación ideal",
+    )
+    axes[0].set_xlim(line_limits)
+    axes[0].set_ylim(line_limits)
+    axes[0].set_aspect("equal", adjustable="box")
+    axes[0].set_title("Real frente a estimado", color="#142b4a", pad=12)
+    axes[0].set_xlabel("Valor real (S/)")
+    axes[0].set_ylabel("Predicción (S/)")
+    axes[0].legend(frameon=False, loc="best")
+
+    axes[1].axhline(0, color="#e88943", linestyle="--", linewidth=2)
+    axes[1].vlines(
+        evaluation_report[spec["feature"]],
+        0,
+        residuals,
+        color="#a6d9d7",
+        linewidth=2,
+        alpha=0.85,
+    )
+    axes[1].scatter(
+        evaluation_report[spec["feature"]],
+        residuals,
+        color="#087f8c",
+        edgecolor="white",
+        linewidth=0.9,
+        s=75,
+        zorder=3,
+    )
+    axes[1].set_title("Error por dato reservado", color="#142b4a", pad=12)
+    axes[1].set_xlabel(spec["feature"])
+    axes[1].set_ylabel("Error (S/)")
+
+    figure.tight_layout(pad=2)
+    st.pyplot(figure, width="stretch")
+    plt.close(figure)
+
+
 def main() -> None:
     st.sidebar.markdown("## 📈 Regresión Lab")
     st.sidebar.caption("Aprende, evalúa y predice con tus datos")
@@ -245,6 +349,11 @@ def main() -> None:
             <div class="section-label" style="color:#b9eff0">PRÁCTICA CALIFICADA · REGRESIÓN LINEAL</div>
             <h1>{case['icon']} {case_label}</h1>
             <p>{case['description']} Revisa los datos, mide el error y explora predicciones.</p>
+            <div class="hero-pills">
+                <span class="hero-pill">🧾 Datos editables</span>
+                <span class="hero-pill">📐 Modelo lineal</span>
+                <span class="hero-pill">🔍 Evaluación visual</span>
+            </div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -265,6 +374,23 @@ def main() -> None:
         )
     else:
         st.success(f"Historial listo: {len(data)} registros numéricos validados.")
+
+    st.markdown("### 🧭 Resumen del conjunto")
+    profile_columns = st.columns(3)
+    profile_columns[0].metric("Registros analizados", f"{len(data)}")
+    profile_columns[1].metric(
+        "Rango de entrada",
+        (
+            f"{data[spec['feature']].min():g} – "
+            f"{data[spec['feature']].max():g} "
+            f"{'m²' if case_key == 'terrenos' else 'meses'}"
+        ),
+    )
+    average_label = "Precio promedio" if case_key == "terrenos" else "Venta promedio"
+    profile_columns[2].metric(
+        average_label,
+        f"S/ {data[spec['target']].mean():,.2f}",
+    )
 
     st.markdown(
         '<div class="section-label">Evaluación con datos no vistos</div>',
@@ -373,6 +499,14 @@ def main() -> None:
             f"Total proyectado para los seis meses: "
             f"S/ {future_data[spec['target']].sum():,.2f}."
         )
+
+    st.markdown("### 🔎 Diagnóstico visual del modelo")
+    st.caption(
+        "En el gráfico de la izquierda, los puntos más cercanos a la diagonal "
+        "tienen predicciones más precisas. A la derecha, los errores cercanos a "
+        "cero son menores. Solo se muestran datos reservados para la evaluación."
+    )
+    render_evaluation_charts(evaluation_report, case_key)
 
     with st.expander("📘 Interpretación y límites del modelo"):
         direction = "aumenta" if result.slope >= 0 else "disminuye"
