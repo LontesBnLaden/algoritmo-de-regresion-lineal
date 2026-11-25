@@ -24,7 +24,10 @@ class AppTests(unittest.TestCase):
             }.issubset(metric_labels)
         )
         self.assertTrue(
-            any("Diagnóstico visual del modelo" in item.value for item in app.markdown)
+            any("¿Qué tan cerca predice?" in item.value for item in app.markdown)
+        )
+        self.assertTrue(
+            any("Construye un escenario" in item.value for item in app.markdown)
         )
         self.assertTrue(
             any("Historial listo: 24 registros" in item.value for item in app.success)
@@ -41,7 +44,17 @@ class AppTests(unittest.TestCase):
                 for item in app.get("download_button")
             )
         )
-        forecast = app.dataframe[0].value
+        self.assertTrue(
+            any(
+                "Exportar informe Excel profesional" in item.label
+                for item in app.get("download_button")
+            )
+        )
+        forecast = next(
+            frame.value
+            for frame in app.dataframe
+            if "Mes futuro" in frame.value.columns
+        )
         self.assertEqual(len(forecast), 6)
         self.assertEqual(forecast["Mes futuro"].iloc[0], 25)
         self.assertAlmostEqual(forecast["Ventas estimadas (S/)"].sum(), 97500.0)

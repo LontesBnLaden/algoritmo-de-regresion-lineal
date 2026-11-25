@@ -5,7 +5,7 @@ Aplicación educativa en español para practicar regresión lineal con dos casos
 - **Precio de terrenos:** estima el precio en soles según el área en metros cuadrados.
 - **Ventas mensuales:** predice ventas y proyecta los siguientes seis meses.
 
-Incluye al menos 20 registros por caso, evaluación con R², MAE y RMSE, un resumen visual del conjunto, gráficos de ajuste y diagnóstico de errores, predicción interactiva, edición de la tabla e importación de CSV. También permite descargar el detalle de evaluación de los datos reservados, incluyendo predicción y errores por fila. Los datos incluidos son simulados.
+Su interfaz oscura está organizada en cuatro vistas: resumen, predicción interactiva, diagnóstico del modelo y centro de datos. Incluye al menos 20 registros por caso, evaluación con R², MAE y RMSE, gráficos de ajuste y errores, edición de la tabla e importación de CSV. Exporta un informe Excel con resumen ejecutivo, métricas explicadas, tablas formateadas, gráficos, evaluación reservada y proyecciones. Los datos incluidos son simulados.
 
 ## Inicio rápido en Windows
 
