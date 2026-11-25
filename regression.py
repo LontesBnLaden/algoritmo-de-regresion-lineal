@@ -10,7 +10,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_absolute_error, r2_score
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
 
 
@@ -49,6 +49,7 @@ class RegressionResult:
     intercept: float
     r2: float
     mae: float
+    rmse: float
     train_size: int
     test_size: int
     test_features: pd.DataFrame
@@ -151,9 +152,25 @@ def train_and_evaluate(data: pd.DataFrame, case_name: str) -> RegressionResult:
         intercept=float(prediction_model.intercept_),
         r2=float(r2_score(test_actual, test_predictions)),
         mae=float(mean_absolute_error(test_actual, test_predictions)),
+        rmse=float(np.sqrt(mean_squared_error(test_actual, test_predictions))),
         train_size=len(train_indices),
         test_size=len(test_indices),
         test_features=test_features,
         test_actual=test_actual,
         test_predictions=test_predictions,
     )
+
+
+def build_evaluation_report(
+    result: RegressionResult, case_name: str
+) -> pd.DataFrame:
+    """Return held-out observations with predictions and signed/absolute errors."""
+    if case_name not in CASE_SPECS:
+        raise ValueError("Selecciona el caso de terrenos o el caso de ventas.")
+
+    report = result.test_features.reset_index(drop=True).copy()
+    report["Valor real (S/)"] = result.test_actual.to_numpy()
+    report["Predicción (S/)"] = result.test_predictions
+    report["Error (S/)"] = report["Predicción (S/)"] - report["Valor real (S/)"]
+    report["Error absoluto (S/)"] = report["Error (S/)"].abs()
+    return report

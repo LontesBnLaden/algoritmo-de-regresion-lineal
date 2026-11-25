@@ -1,9 +1,10 @@
 import unittest
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
-from regression import prepare_dataset, train_and_evaluate
+from regression import build_evaluation_report, prepare_dataset, train_and_evaluate
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -71,6 +72,37 @@ class RegressionTests(unittest.TestCase):
                 ),
                 "terrenos",
             )
+
+    def test_evaluation_report_contains_predictions_and_consistent_errors(self):
+        data = pd.DataFrame(
+            {
+                "Area": [10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
+                "Precio": [10000, 15000, 21000, 25000, 31000, 34000, 41000, 45000, 49000, 56000],
+            }
+        )
+        result = train_and_evaluate(data, "terrenos")
+        report = build_evaluation_report(result, "terrenos")
+
+        self.assertEqual(len(report), result.test_size)
+        self.assertTrue(
+            {
+                "Area (m²)",
+                "Valor real (S/)",
+                "Predicción (S/)",
+                "Error (S/)",
+                "Error absoluto (S/)",
+            }.issubset(report.columns)
+        )
+        self.assertTrue(
+            (report["Error (S/)"] == report["Predicción (S/)"] - report["Valor real (S/)"]).all()
+        )
+        self.assertTrue(
+            (report["Error absoluto (S/)"] == report["Error (S/)"].abs()).all()
+        )
+        self.assertAlmostEqual(
+            result.rmse,
+            np.sqrt(np.mean(np.square(result.test_predictions - result.test_actual))),
+        )
 
 
 if __name__ == "__main__":

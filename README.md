@@ -5,7 +5,7 @@ Aplicación educativa en español para practicar regresión lineal con dos casos
 - **Precio de terrenos:** estima el precio en soles según el área en metros cuadrados.
 - **Ventas mensuales:** predice ventas y proyecta los siguientes seis meses.
 
-Incluye al menos 20 registros por caso, evaluación con R² y MAE, gráficos, predicción interactiva, edición de la tabla e importación de CSV. Los datos incluidos son simulados.
+Incluye al menos 20 registros por caso, evaluación con R², MAE y RMSE, gráficos, predicción interactiva, edición de la tabla e importación de CSV. También permite descargar el detalle de evaluación de los datos reservados, incluyendo predicción y errores por fila. Los datos incluidos son simulados.
 
 ## Inicio rápido en Windows
 
@@ -35,7 +35,7 @@ Puedes descargar desde la aplicación un CSV de ejemplo, editar la tabla dentro 
 
 ## Método y lectura de métricas
 
-El caso de terrenos reserva una muestra aleatoria reproducible para evaluar el modelo. Ventas usa los meses finales como prueba para respetar el orden temporal. Se mide el R² y el error absoluto medio (MAE) sobre los datos reservados; después se ajusta el modelo de predicción con todo el historial disponible.
+El caso de terrenos reserva una muestra aleatoria reproducible para evaluar el modelo. Ventas usa los meses finales como prueba para respetar el orden temporal. Se miden R², el error absoluto medio (MAE) y la raíz del error cuadrático medio (RMSE) sobre los datos reservados; después se ajusta el modelo de predicción con todo el historial disponible. MAE resume el error absoluto promedio y RMSE penaliza más los errores grandes. La descarga de evaluación permite revisar valores reales, predicciones y errores fila por fila.
 
 Los ejemplos son deliberadamente simulados y lineales: el caso de terrenos sigue `Precio = 500 × Área + 5.000` y el de ventas `Ventas = 500 × Mes + 2.500`. Estos resultados sirven para comprobar el algoritmo, no como pronósticos comerciales reales. La aplicación advierte sobre las limitaciones de extrapolar y de usar una sola variable.
 

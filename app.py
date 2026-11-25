@@ -8,7 +8,12 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
-from regression import CASE_SPECS, prepare_dataset, train_and_evaluate
+from regression import (
+    CASE_SPECS,
+    build_evaluation_report,
+    prepare_dataset,
+    train_and_evaluate,
+)
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -65,6 +70,17 @@ st.markdown(
     div[data-testid="stAlert"] { border-radius: 12px; }
     .stButton > button, .stDownloadButton > button {
         border-radius: 10px;
+    }
+    .stDownloadButton > button {
+        border: 1px solid #cfe2e8;
+        background: #edf8f8;
+        color: #075e68;
+        font-weight: 650;
+    }
+    [data-testid="stExpander"] {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: white;
     }
     h2, h3 { color: var(--ink); }
     </style>
@@ -250,15 +266,29 @@ def main() -> None:
     else:
         st.success(f"Historial listo: {len(data)} registros numéricos validados.")
 
-    st.markdown('<div class="section-label">Evaluación con datos no vistos</div>', unsafe_allow_html=True)
-    metric_columns = st.columns(4)
+    st.markdown(
+        '<div class="section-label">Evaluación con datos no vistos</div>',
+        unsafe_allow_html=True,
+    )
+    metric_columns = st.columns(5)
     metric_columns[0].metric("R² de prueba", f"{result.r2:.4f}")
     metric_columns[1].metric("MAE de prueba", f"S/ {result.mae:,.2f}")
-    metric_columns[2].metric("Para entrenar", f"{result.train_size} registros")
-    metric_columns[3].metric("Para evaluar", f"{result.test_size} registros")
+    metric_columns[2].metric("RMSE de prueba", f"S/ {result.rmse:,.2f}")
+    metric_columns[3].metric("Para entrenar", f"{result.train_size} registros")
+    metric_columns[4].metric("Para evaluar", f"{result.test_size} registros")
     st.caption(
         "En ventas, la prueba usa los meses más recientes para respetar el orden "
-        "temporal. En terrenos se reserva una muestra aleatoria reproducible."
+        "temporal. En terrenos se reserva una muestra aleatoria reproducible. "
+        "Un R² negativo indica que el modelo rindió peor que predecir el promedio."
+    )
+    evaluation_report = build_evaluation_report(result, case_key)
+    report_csv = evaluation_report.to_csv(index=False).encode("utf-8-sig")
+    st.download_button(
+        "⬇️ Descargar evaluación detallada (CSV)",
+        data=report_csv,
+        file_name=f"evaluacion_{case_key}.csv",
+        mime="text/csv",
+        help="Incluye valores reales, predicciones y errores de cada registro de prueba.",
     )
 
     formula_sign = "+" if result.intercept >= 0 else "−"
@@ -354,7 +384,8 @@ def main() -> None:
         st.write(
             f"El R² de prueba es **{result.r2:.4f}** y el error absoluto medio "
             f"(MAE) es **S/ {result.mae:,.2f}**. El MAE describe el error promedio "
-            "en las unidades de dinero del ejemplo."
+            f"en las unidades de dinero del ejemplo. El RMSE es **S/ {result.rmse:,.2f}** "
+            "y penaliza más los errores grandes."
         )
         st.markdown(
             """
@@ -367,6 +398,24 @@ def main() -> None:
 
     with st.expander("🧾 Ver historial utilizado"):
         st.dataframe(data, hide_index=True, width="stretch")
+
+    with st.expander("🧪 Ver predicciones de prueba y errores"):
+        st.caption(
+            "Estos registros se reservaron antes de entrenar; el error se calcula "
+            "como predicción menos valor real."
+        )
+        st.dataframe(
+            evaluation_report.style.format(
+                {
+                    "Valor real (S/)": "S/ {:,.2f}",
+                    "Predicción (S/)": "S/ {:,.2f}",
+                    "Error (S/)": "S/ {:,.2f}",
+                    "Error absoluto (S/)": "S/ {:,.2f}",
+                }
+            ),
+            hide_index=True,
+            width="stretch",
+        )
 
     st.markdown("---")
     st.caption(

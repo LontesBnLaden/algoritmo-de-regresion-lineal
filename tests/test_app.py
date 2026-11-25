@@ -14,6 +14,10 @@ class AppTests(unittest.TestCase):
         app.run()
 
         self.assertFalse(app.exception)
+        metric_labels = {item.label for item in app.metric}
+        self.assertTrue(
+            {"R² de prueba", "MAE de prueba", "RMSE de prueba"}.issubset(metric_labels)
+        )
         self.assertTrue(
             any("Historial listo: 24 registros" in item.value for item in app.success)
         )
@@ -21,6 +25,12 @@ class AppTests(unittest.TestCase):
             any(
                 "Proyección de los próximos 6 meses" in item.value
                 for item in app.markdown
+            )
+        )
+        self.assertTrue(
+            any(
+                "Descargar evaluación detallada (CSV)" in item.label
+                for item in app.get("download_button")
             )
         )
         forecast = app.dataframe[0].value
